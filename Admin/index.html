@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>REYES PERFORMANCE · Admin</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --sidebar-mobile-width: 85vw;
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #ef4444;
+            --accent-hover: #dc2626;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --bg-color: #0b1120;
+            --card-bg: #1e293b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: rgba(148,163,184,0.15);
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 20px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+            --shadow-lg: 0 20px 40px -10px rgba(0,0,0,0.6);
+            --touch-target: 44px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ===== LOGIN ===== */
+        #loginScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at 25% 15%, rgba(239,68,68,0.25), transparent 55%),
+                        linear-gradient(160deg, #0b1120, #050810);
+            display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 16px;
+        }
+        .login-card {
+            background: var(--card-bg);
+            padding: 40px 32px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+        .login-card .login-logo {
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+        .login-card .login-logo span { color: var(--accent); }
+        .login-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; }
+        .login-card input {
+            width: 100%; padding: 14px 16px; margin-top: 12px;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: #0f172a; color: white; font-size: 15px;
+            -webkit-appearance: none; transition: var(--transition);
+        }
+        .login-card input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.25);
+            outline: none;
+        }
+        .btn-login-action {
+            background: linear-gradient(135deg, var(--accent), #b91c1c);
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: var(--transition);
+            box-shadow: 0 8px 18px rgba(239,68,68,0.35);
+            min-height: var(--touch-target);
+            font-size: 16px;
+            letter-spacing: 0.3px;
+        }
+        .btn-login-action:active { transform: scale(0.97); }
+        .btn-login-action:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(239,68,68,0.45); }
+        .login-error { color: var(--danger); font-size: 14px; margin-top: 16px; display: none; font-weight: 500; }
+
+        /* ===== MOBILE MENU ===== */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 101;
+            background: var(--card-bg);
+            color: white;
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            min-width: var(--touch-target);
+            min-height: var(--touch-target);
+            touch-action: manipulation;
+            transition: var(--transition);
+        }
+        .mobile-menu-btn:hover { background: var(--primary-light); }
+
+        /* ===== SIDEBAR ===== */
+        aside {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #0f172a, #0b1120);
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .sidebar-brand {
+            padding: 24px 20px 20px;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .sidebar-brand .brand-red { color: var(--accent); }
+        .sidebar-brand span { color: var(--text-muted); font-weight: 400; font-size: 12px; }
+
+        .sidebar-menu {
+            padding: 16px 12px;
+            flex-grow: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .menu-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            padding: 16px 10px 8px;
+            font-weight: 700;
+        }
+        .menu-label:first-child { padding-top: 4px; }
+
+        .sidebar-btn-cat {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 12px;
+            text-align: left;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-height: var(--touch-target);
+            touch-action: manipulation;
+            letter-spacing: 0.2px;
+        }
+        .sidebar-btn-cat i { width: 18px; text-align: center; font-size: 14px; }
+        .sidebar-btn-cat:active { transform: scale(0.97); }
+        .sidebar-btn-cat:hover { background: rgba(255,255,255,0.06); color: white; }
+        .sidebar-btn-cat.active {
+            background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05));
+            color: white;
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .btn-logout-side {
+            width: 100%;
+            background: rgba(239,68,68,0.1);
+            color: #f87171;
+            border: 1px solid rgba(239,68,68,0.25);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: var(--transition);
+            min-height: var(--touch-target);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-logout-side:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.7);
+            z-index: 99;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        /* ===== MAIN ===== */
+        main {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            padding: 32px 36px 48px;
+            width: calc(100% - var(--sidebar-width));
+            transition: margin 0.3s ease, width 0.3s ease;
+            min-height: 100vh;
+            background: var(--bg-color);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header-title h1 {
+            font-size: 26px;
+            font-weight: 800;
+            margin: 0;
+            color: white;
+            letter-spacing: -0.5px;
+        }
+        .header-title p {
+            margin: 6px 0 0 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .header-title .highlight { color: var(--accent); }
+
+        /* ===== STATS ===== */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            min-height: 80px;
+            transition: var(--transition);
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .stat-ico {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .stat-card.total .stat-ico { background: rgba(239,68,68,0.15); color: var(--accent); }
+        .stat-card.nuevo .stat-ico { background: var(--success-bg); color: var(--success); }
+        .stat-card.usado .stat-ico { background: var(--warning-bg); color: var(--warning); }
+        .stat-card.agotado .stat-ico { background: var(--danger-bg); color: var(--danger); }
+        .stat-info span { display: block; font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .stat-info b { display: block; font-size: 24px; font-weight: 800; color: white; margin-top: 4px; }
+
+        /* ===== ACTION BAR ===== */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .btn-primary-action {
+            background: linear-gradient(135deg, var(--accent), #b91c1c);
+            color: white;
+            border: none;
+            padding: 13px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 8px 18px rgba(239,68,68,0.35);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            min-height: var(--touch-target);
+        }
+        .btn-primary-action:active { transform: scale(0.96); }
+        .btn-primary-action:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(239,68,68,0.45); }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            min-width: 220px;
+        }
+        .search-box .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 13px 16px 13px 40px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 14px;
+            outline: none;
+            background: var(--card-bg);
+            color: white;
+            transition: var(--transition);
+            min-height: var(--touch-target);
+            -webkit-appearance: none;
+        }
+        .search-box input::placeholder { color: var(--text-muted); }
+        .search-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(239,68,68,0.2); }
+
+        .contador-resultados {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .btn-actualizar {
+            padding: 13px 18px;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            min-height: var(--touch-target);
+            transition: var(--transition);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-actualizar:active { transform: scale(0.96); }
+        .btn-actualizar:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ===== PRODUCTS GRID ===== */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 20px;
+        }
+        .mensaje-vacio {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: var(--text-muted);
+            padding: 60px 20px;
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            border: 1px dashed var(--border);
+            font-size: 15px;
+        }
+        .product-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+        .product-card:active { transform: scale(0.98); }
+        .product-card:hover {
+            border-color: rgba(239,68,68,0.35);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+        .product-card-img-wrap {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            background: #0f172a;
+            overflow: hidden;
+        }
+        .product-card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            padding: 8px;
+            transition: transform 0.3s ease;
+        }
+        .product-card:hover .product-card-img { transform: scale(1.03); }
+        .card-id-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .badge.nuevo { background: rgba(16,185,129,0.9); color: white; }
+        .badge.usado { background: rgba(245,158,11,0.9); color: white; }
+        .badge.agotado { background: rgba(239,68,68,0.9); color: white; }
+
+        .product-card-body {
+            padding: 18px 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+        .product-card-body h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            line-height: 1.3;
+            letter-spacing: -0.2px;
+        }
+        .card-categoria {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .card-precio {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-top: 6px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 14px;
+        }
+        .btn-action {
+            flex: 1;
+            padding: 10px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: var(--transition);
+            text-align: center;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-action:active { transform: scale(0.95); }
+        .btn-edit { background: rgba(239,68,68,0.12); color: var(--accent); border-color: rgba(239,68,68,0.25); }
+        .btn-edit:hover { background: var(--accent); color: white; }
+        .btn-delete { background: rgba(239,68,68,0.12); color: var(--danger); border-color: rgba(239,68,68,0.25); }
+        .btn-delete:hover { background: var(--danger); color: white; }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 700px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: modalFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
+            margin: auto;
+            border: 1px solid var(--border);
+        }
+        @keyframes modalFadeUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-header {
+            padding: 20px 24px;
+            background: var(--primary-light);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .modal-header h3 { margin: 0; font-size: 19px; font-weight: 800; color: white; }
+        .modal-header h3 .highlight { color: var(--accent); }
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 4px 8px;
+            min-width: var(--touch-target);
+            min-height: var(--touch-target);
+            transition: var(--transition);
+            border-radius: 8px;
+        }
+        .modal-close:hover { color: white; background: rgba(255,255,255,0.1); }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex-grow: 1;
+            -webkit-overflow-scrolling: touch;
+        }
+        .form-section-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+            color: var(--accent);
+            margin: 24px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-section-label:first-child { margin-top: 0; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-grid .full-width { grid-column: 1 / -1; }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+        input[type="text"], input[type="number"], input[type="url"], select, textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            background: #0f172a;
+            color: white;
+            transition: var(--transition);
+            -webkit-appearance: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+        }
+        select option { background: #1e293b; }
+        textarea { resize: vertical; height: 80px; }
+
+        .dropzone-box {
+            border: 2px dashed rgba(239,68,68,0.3);
+            padding: 24px;
+            text-align: center;
+            border-radius: var(--radius-sm);
+            background: #0f172a;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: var(--transition);
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+        .dropzone-box:hover { border-color: var(--accent); background: #1e293b; }
+        .dropzone-box:active { transform: scale(0.98); }
+
+        .preview-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .preview-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .preview-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+            flex: 1;
+            min-width: 0;
+        }
+        .preview-thumb {
+            width: 48px; height: 48px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #0b1120;
+            flex-shrink: 0;
+        }
+        .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-url-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+        .preview-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .btn-img-action {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #cbd5e1;
+            transition: var(--transition);
+            min-height: 34px;
+            min-width: 34px;
+        }
+        .btn-img-action:active { transform: scale(0.92); }
+        .btn-img-action:hover { background: #334155; }
+        .btn-img-delete {
+            background: rgba(239,68,68,0.12);
+            color: var(--danger);
+            border-color: rgba(239,68,68,0.25);
+        }
+        .btn-img-delete:hover { background: var(--danger); color: white; }
+        .btn-suburl {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px dashed rgba(239,68,68,0.3);
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            width: 100%;
+            transition: var(--transition);
+            min-height: var(--touch-target);
+        }
+        .btn-suburl:active { transform: scale(0.97); }
+        .btn-suburl:hover { background: #1e293b; border-color: var(--accent); color: white; }
+
+        .modal-footer {
+            padding: 16px 24px;
+            background: var(--primary-light);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .btn-modal-save {
+            background: linear-gradient(135deg, var(--accent), #b91c1c);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            min-height: var(--touch-target);
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 18px rgba(239,68,68,0.3);
+        }
+        .btn-modal-save:active { transform: scale(0.97); }
+        .btn-modal-save:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(239,68,68,0.4); }
+        .btn-modal-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            min-height: var(--touch-target);
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-modal-cancel:active { transform: scale(0.97); }
+        .btn-modal-cancel:hover { background: #1e293b; color: white; }
+
+        .oculto { display: none; }
+        #msgLoader { font-size: 13px; font-weight: 600; margin-top: 12px; text-align: center; color: var(--accent); }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .products-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+            main { padding: 24px 24px 40px; }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: block; }
+            aside { transform: translateX(-100%); width: var(--sidebar-mobile-width); max-width: 340px; box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
+            aside.open { transform: translateX(0); }
+            .sidebar-overlay.open { display: block; }
+            main { margin-left: 0; width: 100%; padding: 16px 16px 32px; padding-top: 72px; }
+            header { margin-top: 0; }
+            .header-title h1 { font-size: 22px; }
+            .header-title p { font-size: 13px; }
+            .stats-bar { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .stat-card { padding: 14px 16px; min-height: 64px; }
+            .stat-ico { width: 40px; height: 40px; font-size: 16px; }
+            .stat-info b { font-size: 20px; }
+            .action-bar { flex-direction: column; align-items: stretch; gap: 12px; }
+            .btn-primary-action { justify-content: center; width: 100%; }
+            .search-box { min-width: unset; width: 100%; }
+            .contador-resultados { text-align: center; }
+            .btn-actualizar { width: 100%; justify-content: center; }
+            .products-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .product-card-img-wrap { height: 140px; }
+            .product-card-body { padding: 14px 14px 16px; }
+            .product-card-body h3 { font-size: 14px; }
+            .btn-action { font-size: 11px; padding: 8px 4px; min-height: 32px; }
+            .modal-card { max-height: 98vh; margin: 8px; border-radius: var(--radius-md); }
+            .modal-header { padding: 16px 18px; }
+            .modal-header h3 { font-size: 17px; }
+            .modal-body { padding: 16px 18px; }
+            .modal-footer { padding: 12px 16px; flex-direction: column-reverse; }
+            .modal-footer button { width: 100%; justify-content: center; }
+            .form-grid { grid-template-columns: 1fr; gap: 12px; }
+            .form-grid .full-width { grid-column: auto; }
+            .preview-url-text { max-width: 120px; }
+        }
+
+        @media (max-width: 420px) {
+            .products-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .product-card-img-wrap { height: 110px; }
+            .product-card-body h3 { font-size: 13px; }
+            .btn-action { font-size: 10px; padding: 6px 3px; min-height: 30px; }
+            .badge { font-size: 9px; padding: 3px 8px; }
+            .card-id-badge { font-size: 9px; padding: 3px 8px; }
+            .stat-card { padding: 10px 12px; min-height: 52px; }
+            .stat-ico { width: 32px; height: 32px; font-size: 14px; }
+            .stat-info b { font-size: 18px; }
+            .stat-info span { font-size: 9px; }
+            .login-card { padding: 32px 24px; }
+            .preview-url-text { max-width: 70px; font-size: 10px; }
+            .preview-thumb { width: 36px; height: 36px; }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .mobile-menu-btn { top: 8px; left: 8px; padding: 8px 12px; font-size: 16px; }
+            main { padding-top: 56px; padding-left: 12px; padding-right: 12px; }
+            .stats-bar { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+            .stat-card { padding: 8px 10px; min-height: 44px; }
+            .stat-ico { width: 28px; height: 28px; font-size: 12px; }
+            .stat-info b { font-size: 15px; }
+            .stat-info span { font-size: 8px; }
+            .products-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .product-card-img-wrap { height: 90px; }
+            .modal-card { max-height: 90vh; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="mobile-menu-btn" onclick="toggleMenuMobil()" aria-label="Abrir menú"><i class="fas fa-bars"></i></button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenuMobil()"></div>
+
+<div id="loginScreen">
+    <div class="login-card">
+        <div class="login-logo">REYES <span>PERFORMANCE</span></div>
+        <p>Panel de Administración</p>
+        <input type="text" id="userLogin" placeholder="Usuario" autocomplete="username">
+        <input type="password" id="passLogin" placeholder="Contraseña" autocomplete="current-password">
+        <button class="btn-login-action" onclick="intentarLogin()">Acceder al Sistema</button>
+        <div id="errorLogin" class="login-error">Credenciales incorrectas</div>
+    </div>
+</div>
+
+<!-- ===== SIDEBAR CON ICONOS ===== -->
+<aside id="appSidebar">
+    <div class="sidebar-brand">
+        <span class="brand-red">REYES</span> PERFORMANCE
+        <span>Admin</span>
+    </div>
+    <div class="sidebar-menu">
+        <div class="menu-label">Vista general</div>
+        <button class="sidebar-btn-cat active" onclick="filtrarCategoria('Todas', this)"><i class="fas fa-th-large"></i> Todas</button>
+
+        <div class="menu-label">Exterior</div>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('defensa-frontal', this)"><i class="fas fa-shield-alt"></i> Defensas Frontales</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('defensa-trasera', this)"><i class="fas fa-shield-alt"></i> Defensas Traseras</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('parrillas', this)"><i class="fas fa-grip-lines"></i> Parrillas</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('cofres', this)"><i class="fas fa-car"></i> Cofres</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('salpicaderas-delanteras', this)"><i class="fas fa-water"></i> Salpicaderas</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('laterales', this)"><i class="fas fa-arrows-alt-h"></i> Faldones Laterales</button>
+
+        <div class="menu-label">Cristales e Iluminación</div>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('espejos', this)"><i class="fas fa-mirror"></i> Espejos</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('vidrios', this)"><i class="fas fa-window-maximize"></i> Vidrios</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('iluminacion', this)"><i class="fas fa-lightbulb"></i> Iluminación</button>
+
+        <div class="menu-label">Enfriamiento y Motor</div>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('enfriamiento', this)"><i class="fas fa-fan"></i> Radiadores</button>
+
+        <div class="menu-label">Interior, Seguridad y Confort</div>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('tablero-y-consola', this)"><i class="fas fa-tachometer-alt"></i> Tableros</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('bolsas-de-aire', this)"><i class="fas fa-briefcase-medical"></i> Airbags</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('cinturones-y-volantes', this)"><i class="fas fa-life-ring"></i> Cinturones &amp; Volantes</button>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('asientos-y-tapiceria', this)"><i class="fas fa-chair"></i> Asientos &amp; Tapicería</button>
+
+        <div class="menu-label">Accesorios</div>
+        <button class="sidebar-btn-cat" onclick="filtrarCategoria('accesorio', this)"><i class="fas fa-puzzle-piece"></i> Accesorios</button>
+    </div>
+    <div class="sidebar-footer">
+        <button class="btn-logout-side" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+    </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main>
+    <header>
+        <div class="header-title">
+            <h1>Gestión de Inventario <span class="highlight">REYES PERFORMANCE</span></h1>
+            <p>Administra tus autopartes en tiempo real.</p>
+        </div>
+    </header>
+
+    <div class="stats-bar">
+        <div class="stat-card total">
+            <div class="stat-ico"><i class="fas fa-boxes"></i></div>
+            <div class="stat-info"><span>Total</span><b id="statTotal">0</b></div>
+        </div>
+        <div class="stat-card nuevo">
+            <div class="stat-ico"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info"><span>Nuevos</span><b id="statNuevo">0</b></div>
+        </div>
+        <div class="stat-card usado">
+            <div class="stat-ico"><i class="fas fa-history"></i></div>
+            <div class="stat-info"><span>Usados</span><b id="statUsado">0</b></div>
+        </div>
+        <div class="stat-card agotado">
+            <div class="stat-ico"><i class="fas fa-times-circle"></i></div>
+            <div class="stat-info"><span>Agotados</span><b id="statAgotado">0</b></div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <button class="btn-primary-action" onclick="abrirModalNuevo()">
+            <i class="fas fa-plus"></i> Nuevo Producto
+        </button>
+        <div class="search-box">
+            
+            <input type="text" id="inputBuscador" placeholder="Buscar por título, marca, modelo o ID..." oninput="filtrarPorBusqueda()" autocomplete="off">
+        </div>
+        <button class="btn-actualizar" onclick="cargarProductos()">
+            <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+        <span class="contador-resultados" id="contadorResultados"></span>
+    </div>
+
+    <div class="products-grid" id="listaProductos">
+        <p style="text-align: center; color: var(--text-muted); padding: 40px; grid-column: 1 / -1;">
+            <i class="fas fa-spinner fa-spin"></i> Cargando productos...
+        </p>
+    </div>
+</main>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modalProducto">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="modalTitulo"><span class="highlight">Nuevo</span> Producto</h3>
+            <button class="modal-close" onclick="cerrarModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-section-label"><i class="fas fa-tag"></i> Identificación</div>
+            <input type="hidden" id="productoIdOriginal">
+
+            <div class="form-grid">
+                <div class="full-width">
+                    <label>Título del Producto <span style="color:var(--accent);">*</span></label>
+                    <input type="text" id="inputTitulo" placeholder="Ej. Defensa Frontal Mustang GT 2015">
+                </div>
+                <div>
+                    <label>Marca <span style="color:var(--accent);">*</span></label>
+                    <input type="text" id="inputMarca" placeholder="Ej. Ford">
+                </div>
+                <div>
+                    <label>Modelo <span style="color:var(--accent);">*</span></label>
+                    <input type="text" id="inputModelo" placeholder="Ej. Mustang GT">
+                </div>
+                <div>
+                    <label>Año</label>
+                    <input type="text" id="inputYear" placeholder="Ej. 2015-2023">
+                </div>
+            </div>
+
+            <div class="form-section-label"><i class="fas fa-clipboard-list"></i> Clasificación</div>
+            <div class="form-grid">
+                <div>
+                    <label>Categoría <span style="color:var(--accent);">*</span></label>
+                    <select id="inputCategoria">
+                        <option value="defensa-frontal">Defensa Frontal</option>
+                        <option value="defensa-trasera">Defensa Trasera</option>
+                        <option value="parrillas">Parrillas</option>
+                        <option value="cofres">Cofres</option>
+                        <option value="salpicaderas-delanteras">Salpicaderas</option>
+                        <option value="laterales">Faldones Laterales</option>
+                        <option value="espejos">Espejos</option>
+                        <option value="vidrios">Vidrios</option>
+                        <option value="iluminacion">Iluminación</option>
+                        <option value="enfriamiento">Radiadores</option>
+                        <option value="tablero-y-consola">Tableros</option>
+                        <option value="bolsas-de-aire">Airbags</option>
+                        <option value="cinturones-y-volantes">Cinturones &amp; Volantes</option>
+                        <option value="asientos-y-tapiceria">Asientos &amp; Tapicería</option>
+                        <option value="accesorio">Accesorios</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Condición <span style="color:var(--accent);">*</span></label>
+                    <select id="inputCondicion">
+                        <option value="nuevo">Nuevo</option>
+                        <option value="usado">Usado</option>
+                        <option value="agotado">Agotado</option>
+                    </select>
+                </div>
+                <div class="full-width">
+                    <label>Descripción</label>
+                    <textarea id="inputDescripcion" placeholder="Medidas, materiales, detalles..."></textarea>
+                </div>
+            </div>
+
+            <div class="form-section-label"><i class="fas fa-dollar-sign"></i> Precio</div>
+            <div class="form-grid">
+                <div class="full-width">
+                    <label>Precio de Contado <span style="color:var(--accent);">*</span></label>
+                    <input type="number" id="inputPrecio" step="0.01" placeholder="Ej. 12500.00">
+                </div>
+            </div>
+
+            <div class="form-section-label"><i class="fas fa-images"></i> Imágenes</div>
+            <div class="dropzone-box" onclick="document.getElementById('fileInput').click()">
+                <p style="margin: 0; color: var(--accent); font-weight: 600; font-size: 13px;">
+                    <i class="fas fa-cloud-upload-alt"></i> Arrastra fotos aquí o haz clic para explorar
+                </p>
+            </div>
+            <input type="file" id="fileInput" class="oculto" accept="image/*" multiple onchange="subirArchivosASupabase(this.files)">
+
+            <label style="margin-top: 16px;">Imágenes del Producto:</label>
+            <div class="preview-list" id="previewContainer"></div>
+
+            <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap:wrap;">
+                <input type="url" id="inputUrlManual" placeholder="https://ejemplo.com/foto.jpg" style="flex:1; min-width:160px;">
+                <button type="button" class="btn-suburl" style="width:auto; padding: 10px 16px; flex-shrink:0;" onclick="agregarUrlManual()">
+                    <i class="fas fa-plus"></i> Agregar URL
+                </button>
+            </div>
+            <div id="msgLoader"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal-cancel" onclick="cerrarModal()"><i class="fas fa-ban"></i> Cancelar</button>
+            <button class="btn-modal-save" onclick="guardarProducto()">
+                <i class="fas fa-save"></i> Guardar Producto
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // CONFIGURACIÓN DE SUPABASE
+    // ============================================
+    const SUPABASE_URL = 'https://frpycdvqavqsbzbqmugr.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZycHljZHZxYXZxc2J6YnFtdWdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzMDk2OTksImV4cCI6MjEwMzg4NTY5OX0.wUXeldEnZLoj6ceuwGaaNg-dZwvoLCelkZEV_lk9sDQ';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ============================================
+    // ESTADO GLOBAL
+    // ============================================
+    let productosGlobales = [];
+    let categoriaActual = 'Todas';
+    let imagenesActuales = [];
+
+    // ============================================
+    // INICIALIZACIÓN
+    // ============================================
+    window.addEventListener('DOMContentLoaded', async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+            document.getElementById('loginScreen').style.display = 'none';
+            cargarProductos();
+        }
+        configurarDragAndDrop();
+    });
+
+    // ============================================
+    // LOGIN / LOGOUT
+    // ============================================
+    async function intentarLogin() {
+        const usuario = document.getElementById('userLogin').value.trim();
+        const pass = document.getElementById('passLogin').value.trim();
+
+        if (!usuario || !pass) {
+            document.getElementById('errorLogin').style.display = 'block';
+            return;
+        }
+
+        const email = `${usuario}@reyesperformance.local`;
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: pass
+        });
+
+        if (error) {
+            document.getElementById('errorLogin').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('errorLogin').style.display = 'none';
+        document.getElementById('loginScreen').style.display = 'none';
+        cargarProductos();
+    }
+
+    async function cerrarSesion() {
+        await supabaseClient.auth.signOut();
+        location.reload();
+    }
+
+    function toggleMenuMobil() {
+        const sidebar = document.getElementById('appSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('open');
+    }
+
+    // ============================================
+    // CRUD DE PRODUCTOS (TABLA CORRECTA: "products")
+    // ============================================
+    async function cargarProductos() {
+        const { data, error } = await supabaseClient
+            .from('products')
+            .select('*')
+            .order('id', { ascending: false });
+
+        if (error) {
+            console.error('Error cargando productos:', error);
+            return;
+        }
+
+        productosGlobales = data || [];
+        actualizarEstadisticas();
+        mostrarProductosFiltrados();
+    }
+
+    function actualizarEstadisticas() {
+        const total = productosGlobales.length;
+        const nuevos = productosGlobales.filter(p => (p.condition || 'nuevo') === 'nuevo').length;
+        const usados = productosGlobales.filter(p => p.condition === 'usado').length;
+        const agotados = productosGlobales.filter(p => p.condition === 'agotado').length;
+
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statNuevo').textContent = nuevos;
+        document.getElementById('statUsado').textContent = usados;
+        document.getElementById('statAgotado').textContent = agotados;
+    }
+
+    function filtrarCategoria(cat, elementoBtn) {
+        categoriaActual = cat;
+        document.querySelectorAll('.sidebar-btn-cat').forEach(btn => btn.classList.remove('active'));
+        if (elementoBtn) elementoBtn.classList.add('active');
+        mostrarProductosFiltrados();
+        if (window.innerWidth <= 768) toggleMenuMobil();
+    }
+
+    function filtrarPorBusqueda() {
+        const textoBusqueda = document.getElementById('inputBuscador').value.toLowerCase().trim();
+        let filtrados = productosGlobales.filter(p =>
+            categoriaActual === 'Todas' || p.category === categoriaActual
+        );
+
+        if (textoBusqueda !== '') {
+            filtrados = filtrados.filter(p =>
+                (p.name && p.name.toLowerCase().includes(textoBusqueda)) ||
+                (p.brand && p.brand.toLowerCase().includes(textoBusqueda)) ||
+                (p.car_model && p.car_model.toLowerCase().includes(textoBusqueda)) ||
+                (p.id && p.id.toString().includes(textoBusqueda))
+            );
+        }
+
+        renderizarLista(filtrados);
+    }
+
+    function mostrarProductosFiltrados() {
+        const filtrados = productosGlobales.filter(p =>
+            categoriaActual === 'Todas' || p.category === categoriaActual
+        );
+        renderizarLista(filtrados);
+    }
+
+    function renderizarLista(lista) {
+        const contenedor = document.getElementById('listaProductos');
+        const contadorEl = document.getElementById('contadorResultados');
+
+        if (contadorEl) {
+            contadorEl.textContent = `${lista.length} producto${lista.length === 1 ? '' : 's'}`;
+        }
+
+        if (lista.length === 0) {
+            contenedor.innerHTML = `
+                <div class="mensaje-vacio">
+                    <i class="fas fa-box-open" style="font-size: 2.5rem; display: block; margin-bottom: 16px;"></i>
+                    No se encontraron productos.
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        lista.forEach(prod => {
+            const primeraImg = (prod.images && prod.images.length > 0) ?
+                prod.images[0] :
+                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"%3E%3Crect width="300" height="200" fill="%231e293b"/%3E%3Ctext x="150" y="110" font-family="Arial" font-size="18" fill="%2394a3b8" text-anchor="middle"%3ESin imagen%3C/text%3E%3C/svg%3E';
+
+            const badgeClass = prod.condition === 'nuevo' ? 'nuevo' : (prod.condition === 'usado' ? 'usado' : 'agotado');
+            const badgeLabel = prod.condition === 'nuevo' ? 'Nuevo' : (prod.condition === 'usado' ? 'Usado' : 'Agotado');
+
+            const displayName = prod.name || 'Sin título';
+            const displayBrand = prod.brand || '';
+            const displayModel = prod.car_model || '';
+            let displayYear = prod.year || '';
+            if (!displayYear && prod.year_start && prod.year_end) {
+                displayYear = prod.year_start === prod.year_end
+                    ? prod.year_start.toString()
+                    : `${prod.year_start} - ${prod.year_end}`;
+            }
+            const displayCategory = prod.category || 'Sin categoría';
+
+            html += `
+                <div class="product-card">
+                    <div class="product-card-img-wrap">
+                        <span class="card-id-badge">#${prod.id}</span>
+                        <span class="badge ${badgeClass}">${badgeLabel}</span>
+                        <img src="${primeraImg}" class="product-card-img" loading="lazy" onerror="this.src='data:image/svg+xml,%253Csvg xmlns=%2522http://www.w3.org/2000/svg%2522 width=%2522300%2522 height=%2522200%2522 viewBox=%25220 0 300 200%2522%253E%253Crect width=%2522300%2522 height=%2522200%2522 fill=%2522%25231e293b%2522/%253E%253Ctext x=%2522150%2522 y=%2522110%2522 font-family=%2522Arial%2522 font-size=%252218%2522 fill=%2522%252394a3b8%2522 text-anchor=%2522middle%2522%253ESin imagen%253C/text%253E%253C/svg%253E'">
+                    </div>
+                    <div class="product-card-body">
+                        <h3>${displayName}</h3>
+                        <span class="card-categoria">${displayCategory} ${displayBrand ? '· ' + displayBrand : ''} ${displayModel ? '· ' + displayModel : ''} ${displayYear ? '· ' + displayYear : ''}</span>
+                        <div class="card-precio">$${prod.price ? Number(prod.price).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}) : '0.00'}</div>
+                        <div class="card-actions">
+                            <button class="btn-action btn-edit" onclick="abrirModalEditar(${prod.id})"><i class="fas fa-edit"></i> Editar</button>
+                            <button class="btn-action btn-delete" onclick="eliminarProducto(${prod.id})"><i class="fas fa-trash"></i> Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        contenedor.innerHTML = html;
+    }
+
+    // ============================================
+    // MODAL - NUEVO / EDITAR
+    // ============================================
+    function abrirModalNuevo() {
+        document.getElementById('modalTitulo').innerHTML = '<span class="highlight">Nuevo</span> Producto';
+        document.getElementById('productoIdOriginal').value = '';
+        document.getElementById('inputTitulo').value = '';
+        document.getElementById('inputMarca').value = '';
+        document.getElementById('inputModelo').value = '';
+        document.getElementById('inputYear').value = '';
+        document.getElementById('inputCategoria').value = 'defensa-frontal';
+        document.getElementById('inputCondicion').value = 'nuevo';
+        document.getElementById('inputDescripcion').value = '';
+        document.getElementById('inputPrecio').value = '';
+        imagenesActuales = [];
+        renderizarPreviews();
+        document.getElementById('modalProducto').style.display = 'flex';
+    }
+
+    function abrirModalEditar(id) {
+        const prod = productosGlobales.find(p => p.id === id);
+        if (!prod) return;
+
+        document.getElementById('modalTitulo').innerHTML = '<span class="highlight">Editar</span> Producto';
+        document.getElementById('productoIdOriginal').value = prod.id;
+        document.getElementById('inputTitulo').value = prod.name || '';
+        document.getElementById('inputMarca').value = prod.brand || '';
+        document.getElementById('inputModelo').value = prod.car_model || '';
+        document.getElementById('inputYear').value = prod.year || '';
+        document.getElementById('inputCategoria').value = prod.category || 'defensa-frontal';
+        document.getElementById('inputCondicion').value = prod.condition || 'nuevo';
+        document.getElementById('inputDescripcion').value = prod.description || '';
+        document.getElementById('inputPrecio').value = prod.price || '';
+        imagenesActuales = prod.images ? [...prod.images] : [];
+        renderizarPreviews();
+        document.getElementById('modalProducto').style.display = 'flex';
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalProducto').style.display = 'none';
+        document.getElementById('msgLoader').textContent = '';
+    }
+
+    // ============================================
+    // IMÁGENES
+    // ============================================
+    function configurarDragAndDrop() {
+        const dropZone = document.querySelector('.dropzone-box');
+        if (!dropZone) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => e.preventDefault());
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            subirArchivosASupabase(e.dataTransfer.files);
+        });
+    }
+
+    async function subirArchivosASupabase(files) {
+        if (files.length === 0) return;
+
+        const msg = document.getElementById('msgLoader');
+        msg.textContent = 'Subiendo imágenes...';
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const nombreBase = file.name.replace(/\.[^/.]+$/, '');
+            const ruta = `${Date.now()}_${i}_${nombreBase}.webp`;
+
+            const { error } = await supabaseClient.storage
+                .from('productos')
+                .upload(ruta, file, {
+                    contentType: 'image/webp',
+                    cacheControl: '31536000',
+                });
+
+            if (error) {
+                console.error('Error al subir:', error);
+                continue;
+            }
+
+            const { data } = supabaseClient.storage
+                .from('productos')
+                .getPublicUrl(ruta);
+
+            imagenesActuales.push(data.publicUrl);
+        }
+
+        renderizarPreviews();
+        msg.textContent = `${files.length} imagen(es) subida(s) correctamente.`;
+        setTimeout(() => { msg.textContent = ''; }, 3000);
+    }
+
+    function agregarUrlManual() {
+        const input = document.getElementById('inputUrlManual');
+        if (!input.value) return;
+        imagenesActuales.push(input.value);
+        input.value = '';
+        renderizarPreviews();
+    }
+
+    // ============================================
+    // ELIMINAR IMAGEN LOCAL (CORREGIDO CON AWAIT)
+    // ============================================
+   async function eliminarImagenLocal(index) {
+    const url = imagenesActuales[index];
+
+    if (url && url.includes('supabase')) {
+        try {
+            const nombreArchivo = url.split('/').pop().split('?')[0];
+            console.log(`🗑️ Intentando eliminar: ${nombreArchivo}`);
+
+            const { error } = await supabaseClient.storage
+                .from('productos')
+                .remove([nombreArchivo]);
+
+            if (error) {
+                console.error('❌ Error al eliminar del storage:', error);
+                alert('Error al eliminar la imagen: ' + error.message);
+                return; // No eliminar de la lista local si falla
+            } else {
+                console.log('✅ Imagen eliminada del storage');
+            }
+        } catch (e) {
+            console.error('❌ Excepción al eliminar imagen:', e);
+            alert('Excepción: ' + e.message);
+            return;
+        }
+    }
+
+    // Solo eliminar de la lista local si la operación en storage fue exitosa
+    imagenesActuales.splice(index, 1);
+    renderizarPreviews();
+}
+
+    function moverImagen(index, direccion) {
+        const nuevoIndex = index + direccion;
+        if (nuevoIndex < 0 || nuevoIndex >= imagenesActuales.length) return;
+        [imagenesActuales[index], imagenesActuales[nuevoIndex]] =
+        [imagenesActuales[nuevoIndex], imagenesActuales[index]];
+        renderizarPreviews();
+    }
+
+    function renderizarPreviews() {
+        const container = document.getElementById('previewContainer');
+        if (!container) return;
+
+        if (imagenesActuales.length === 0) {
+            container.innerHTML = `
+                <div style="color: var(--text-muted); font-size: 13px; padding: 8px 0;">
+                    <i class="fas fa-info-circle"></i> No hay imágenes agregadas.
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = imagenesActuales.map((url, index) => `
+            <div class="preview-item">
+                <div class="preview-left">
+                    <div class="preview-thumb"><img src="${url}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%231e293b%22/%3E%3Ctext x=%2220%22 y=%2224%22 font-family=%22Arial%22 font-size=%2212%22 fill=%22%2394a3b8%22 text-anchor=%22middle%22%3E?%3C/text%3E%3C/svg%3E'"></div>
+                    <div class="preview-url-text">${index+1}. ${url.substring(0, 50)}${url.length > 50 ? '...' : ''}</div>
+                </div>
+                <div class="preview-actions">
+                    <button type="button" class="btn-img-action" onclick="moverImagen(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.4;"' : ''}><i class="fas fa-arrow-up"></i></button>
+                    <button type="button" class="btn-img-action" onclick="moverImagen(${index}, 1)" ${index === imagenesActuales.length - 1 ? 'disabled style="opacity:0.4;"' : ''}><i class="fas fa-arrow-down"></i></button>
+                    <button type="button" class="btn-img-action btn-img-delete" onclick="eliminarImagenLocal(${index})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ============================================
+    // GUARDAR PRODUCTO CON LOGS DE DEPURACIÓN
+    // ============================================
+    async function guardarProducto() {
+        const idOriginal = document.getElementById('productoIdOriginal').value;
+        const name = document.getElementById('inputTitulo').value.trim();
+        const brand = document.getElementById('inputMarca').value.trim();
+        const model = document.getElementById('inputModelo').value.trim();
+        const year = document.getElementById('inputYear').value.trim();
+        const category = document.getElementById('inputCategoria').value;
+        const condition = document.getElementById('inputCondicion').value;
+        const description = document.getElementById('inputDescripcion').value.trim();
+        const price = parseFloat(document.getElementById('inputPrecio').value) || 0;
+
+        if (!name) {
+            alert('El título del producto es obligatorio.');
+            return;
+        }
+
+        if (!brand) {
+            alert('La marca del producto es obligatoria.');
+            return;
+        }
+
+        if (!model) {
+            alert('El modelo del producto es obligatorio.');
+            return;
+        }
+
+        if (!category) {
+            alert('La categoría es obligatoria.');
+            return;
+        }
+
+        if (price <= 0) {
+            alert('El precio debe ser mayor a 0.');
+            return;
+        }
+
+        // Datos a enviar (sin updated_at)
+        const datos = {
+            name: name,
+            brand: brand,
+            car_model: model,
+            year: year,
+            category: category,
+            condition: condition,
+            description: description,
+            price: price,
+            images: imagenesActuales
+        };
+
+        console.log('📦 Datos a guardar:', datos);
+
+        const msg = document.getElementById('msgLoader');
+        msg.textContent = 'Guardando producto...';
+
+        try {
+            let result;
+            if (idOriginal) {
+                console.log('✏️ Actualizando producto ID:', idOriginal);
+                result = await supabaseClient
+                    .from('products')
+                    .update(datos)
+                    .eq('id', parseInt(idOriginal));
+            } else {
+                console.log('📝 Creando nuevo producto');
+                result = await supabaseClient
+                    .from('products')
+                    .insert([datos]);
+            }
+
+            console.log('✅ Resultado de Supabase:', result);
+
+            if (result.error) {
+                console.error('❌ Error de Supabase:', result.error);
+                alert('Error al guardar: ' + result.error.message);
+                msg.textContent = 'Error: ' + result.error.message;
+                return;
+            }
+
+            msg.textContent = 'Producto guardado exitosamente!';
+            setTimeout(() => { msg.textContent = ''; }, 2000);
+
+            cerrarModal();
+            cargarProductos();
+        } catch (error) {
+            console.error('❌ Excepción al guardar:', error);
+            msg.textContent = 'Error al guardar el producto.';
+            alert('Hubo un error al guardar el producto.');
+        }
+    }
+
+    // ============================================
+    // ELIMINAR PRODUCTO (YA INCLUYE AWAIT)
+    // ============================================
+    async function eliminarProducto(id) {
+        if (!confirm('¿Estás seguro de eliminar este producto y todas sus imágenes asociadas?')) return;
+
+        try {
+            const { data: producto, error: fetchError } = await supabaseClient
+                .from('products')
+                .select('images')
+                .eq('id', id)
+                .single();
+
+            if (fetchError) throw fetchError;
+
+            if (producto && producto.images && producto.images.length > 0) {
+                const rutas = producto.images.map(url => {
+                    const parts = url.split('/');
+                    return parts[parts.length - 1].split('?')[0];
+                });
+
+                console.log('🗑️ Eliminando imágenes del storage:', rutas);
+
+                const { error: deleteError } = await supabaseClient.storage
+                    .from('productos')
+                    .remove(rutas);
+
+                if (deleteError) {
+                    console.error('Error al eliminar imágenes del storage:', deleteError);
+                } else {
+                    console.log('✅ Imágenes eliminadas del storage');
+                }
+            }
+
+            await supabaseClient
+                .from('products')
+                .delete()
+                .eq('id', id);
+
+            alert('Producto e imágenes eliminados correctamente.');
+            cargarProductos();
+        } catch (error) {
+            console.error('Error al eliminar:', error);
+            alert('Hubo un error al eliminar el producto.');
+        }
+    }
+</script>
+
+</body>
+</html>
