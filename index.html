@@ -225,6 +225,10 @@ button{cursor:pointer;border:0;background:none}
 .video-link{color:#d6d8dc;font-weight:600;text-decoration:none}.video-link i{margin-right:6px}
 @media(hover:hover){.video-link:hover{color:#fff}}
 @media(max-width:900px){.header-modern.has-video .hero-inner{grid-template-columns:1fr}.has-video .scroll-hint{display:none}.header-modern.has-video{padding-bottom:150px}}
+.video-frame{position:relative}
+.video-sound{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:2;display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:999px;background:rgba(12,13,15,.82);color:#fff;font-weight:600;white-space:nowrap;border:1px solid rgba(255,255,255,.25);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:nudgeUp 2.2s ease-in-out infinite}
+.video-sound[hidden]{display:none}
+@keyframes nudgeUp{50%{transform:translateX(-50%) translateY(-3px)}}
 </style>
   </head>
   <body>
@@ -295,6 +299,7 @@ button{cursor:pointer;border:0;background:none}
           <div class="hero-video" id="videoDestacado">
             <div class="video-frame">
               <iframe id="tiktokFrame" title="Video de TikTok de REYES PERFORMANCE" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+              <button class="video-sound" id="tiktokSound" type="button"><i class="fas fa-volume-up"></i> Activar sonido</button>
             </div>
             <a id="tiktokLink" class="video-link" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-tiktok"></i> Ver en TikTok</a>
           </div>
@@ -909,9 +914,37 @@ button{cursor:pointer;border:0;background:none}
           const m = u.match(/^https?:\/\/([a-z0-9-]+\.)?tiktok\.com\/.*\/video\/(\d+)/i);
           if (!m) { hero.classList.remove("has-video"); return; }
           document.getElementById("tiktokLink").href = u;
-          frame.src = `https://www.tiktok.com/player/v1/${m[2]}?autoplay=1&loop=1&music_info=0&description=0&rel=0`;
+          frame.src = `https://www.tiktok.com/player/v1/${m[2]}?autoplay=1&loop=1&volume_control=1&music_info=0&description=0&rel=0`;
           hero.classList.add("has-video");
         }
+        // Sonido: los navegadores no permiten audio automático sin una interacción previa.
+        // El video arranca en silencio y se activa el sonido con el botón o con el primer toque/tecla
+        // del visitante mientras el video está a la vista.
+        const soundBtn = document.getElementById("tiktokSound");
+        function unmuteTikTok() {
+          const f = document.getElementById("tiktokFrame");
+          if (f && f.contentWindow) f.contentWindow.postMessage({ type: "unMute", "x-tiktok-player": true }, "*");
+        }
+        function onFirstGesture() {
+          const box = document.getElementById("videoDestacado").getBoundingClientRect();
+          if (soundBtn.hidden || box.width === 0) return;
+          if (box.bottom > 0 && box.top < window.innerHeight) {
+            unmuteTikTok();
+            window.removeEventListener("pointerdown", onFirstGesture);
+            window.removeEventListener("keydown", onFirstGesture);
+          }
+        }
+        window.addEventListener("pointerdown", onFirstGesture, { passive: true });
+        window.addEventListener("keydown", onFirstGesture);
+        soundBtn.addEventListener("click", function () {
+          unmuteTikTok();
+          this.hidden = true;
+        });
+        window.addEventListener("message", function (e) {
+          if (String(e.origin).indexOf("tiktok.com") < 0) return;
+          const d = e.data;
+          if (d && d["x-tiktok-player"] && d.type === "onMute") soundBtn.hidden = d.value === false;
+        });
 
         // Elementos DOM
         const catalogGrid = document.getElementById("catalogGrid");
