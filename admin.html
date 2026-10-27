@@ -149,6 +149,9 @@ main{margin-left:0;padding-top:76px}}
 .switch span::after{content:"";position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .25s var(--ease)}
 .switch input:checked+span{background:var(--red)}.switch input:checked+span::after{transform:translateX(26px)}
 .switch input:focus-visible+span{outline:2px solid var(--red);outline-offset:3px}.switch input:disabled{cursor:wait}
+.tiktok-form{flex:1 1 440px;display:flex;gap:10px;flex-wrap:wrap}
+.tiktok-form input{flex:1 1 240px;min-width:0;height:48px;padding:0 14px;font-size:16px;background:var(--bg);border:1px solid var(--line2);border-radius:12px;transition:border-color .2s,box-shadow .2s}
+.tiktok-form input:focus{outline:0;border-color:var(--red);box-shadow:0 0 0 4px rgba(229,9,20,.16)}
 </style>
 </head>
 <body>
@@ -241,6 +244,18 @@ main{margin-left:0;padding-top:76px}}
             <p>Los precios están <span class="setting-state on" id="estadoPrecios">visibles</span>. Si los ocultas, la tienda y los mensajes de WhatsApp no mostrarán el precio.</p>
         </div>
         <label class="switch" aria-label="Mostrar precios en la página principal"><input type="checkbox" id="togglePrecios" checked onchange="guardarAjustePrecios(this)"><span></span></label>
+    </div>
+
+    <div class="setting-card" style="flex-wrap:wrap">
+        <div style="flex:1 1 280px">
+            <h4><i class="fab fa-tiktok" style="color:var(--red)"></i> Video de TikTok en la página principal</h4>
+            <p id="estadoTiktok">Sin video: la portada se muestra sin video.</p>
+        </div>
+        <div class="tiktok-form">
+            <input type="url" id="inputTiktok" placeholder="https://www.tiktok.com/@usuario/video/123456789" autocomplete="off">
+            <button class="btn-primary-action" onclick="guardarTiktok()"><i class="fas fa-save"></i> Guardar</button>
+            <button class="btn-actualizar" onclick="quitarTiktok()"><i class="fas fa-trash"></i> Quitar</button>
+        </div>
     </div>
 
     <div class="action-bar">
@@ -467,8 +482,41 @@ main{margin-left:0;padding-top:76px}}
         pintarEstadoPrecios(visible);
     }
 
+    // ============================================
+    // AJUSTE: VIDEO DE TIKTOK EN LA TIENDA
+    // ============================================
+    const TIKTOK_RE = /^https?:\/\/([a-z0-9-]+\.)?tiktok\.com\/.*\/video\/\d+/i;
+    function pintarEstadoTiktok(url) {
+        document.getElementById('inputTiktok').value = url || '';
+        document.getElementById('estadoTiktok').textContent = url
+            ? 'Video activo en la portada de la página principal.'
+            : 'Sin video: la portada se muestra sin video.';
+    }
+    async function cargarTiktok() {
+        try {
+            const { data } = await supabaseClient.from('site_settings').select('value').eq('key', 'tiktok_video_url').maybeSingle();
+            pintarEstadoTiktok(data && data.value ? data.value : '');
+        } catch (e) { pintarEstadoTiktok(''); }
+    }
+    async function guardarTiktok() {
+        const url = document.getElementById('inputTiktok').value.trim();
+        if (!TIKTOK_RE.test(url)) {
+            alert('Pega el enlace completo del video, que contiene /video/ y un número.\n\nEjemplo: https://www.tiktok.com/@usuario/video/7345678901234567890\n\nSi copiaste un enlace corto (vm.tiktok.com), ábrelo en el navegador y copia la dirección final.');
+            return;
+        }
+        const { error } = await supabaseClient.from('site_settings').upsert({ key: 'tiktok_video_url', value: url }, { onConflict: 'key' });
+        if (error) { alert('No se pudo guardar el video: ' + error.message); return; }
+        pintarEstadoTiktok(url);
+    }
+    async function quitarTiktok() {
+        const { error } = await supabaseClient.from('site_settings').delete().eq('key', 'tiktok_video_url');
+        if (error) { alert('No se pudo quitar el video: ' + error.message); return; }
+        pintarEstadoTiktok('');
+    }
+
     async function cargarProductos() {
         cargarAjustePrecios();
+        cargarTiktok();
         const { data, error } = await supabaseClient
             .from('products')
             .select('*')
