@@ -848,6 +848,16 @@ button{cursor:pointer;border:0;background:none}
           SUPABASE_ANON_KEY,
         );
 
+        // Ajuste global: mostrar u ocultar precios (se controla desde el panel admin)
+        let SHOW_PRICES = true;
+        const settingsReady = Promise.resolve(
+          supabase.from("site_settings").select("value").eq("key", "show_prices").maybeSingle(),
+        )
+          .then(({ data }) => {
+            if (data && String(data.value) === "false") SHOW_PRICES = false;
+          })
+          .catch(() => {});
+
         // Elementos DOM
         const catalogGrid = document.getElementById("catalogGrid");
         const loadMoreWrapper = document.getElementById("loadMoreWrapper");
@@ -1060,6 +1070,7 @@ button{cursor:pointer;border:0;background:none}
         async function loadProducts() {
           if (isLoading) return;
           isLoading = true;
+          await settingsReady;
           try {
             const { data, error } = await supabase
               .from("products")
@@ -1299,7 +1310,7 @@ button{cursor:pointer;border:0;background:none}
                         ${yearDisplay ? `<span><i class="far fa-calendar-alt"></i><span class="vm-value">${yearDisplay}</span></span>` : ""}
                     </div>
                     <div class="card-bottom">
-                        <div class="price">${formattedPrice}</div>
+                        ${SHOW_PRICES ? `<div class="price">${formattedPrice}</div>` : ""}
                         <span class="${conditionClass}"><i class="fas ${p.condition === "nuevo" ? "fa-check-circle" : p.condition === "usado" ? "fa-history" : "fa-times-circle"}"></i> ${conditionLabel}</span>
                     </div>
                     <button class="btn-whatsapp-card buy-btn" data-product-id="${p.id}">
@@ -1329,7 +1340,7 @@ button{cursor:pointer;border:0;background:none}
                         maximumFractionDigits: 2,
                       }).format(product.price)
                     : "$0.00";
-                  const message = `Hola, me interesa la pieza: ${product.name} para ${product.brand || ""} ${product.car_model || ""} (${product.year_start && product.year_end ? (product.year_start === product.year_end ? product.year_start : `${product.year_start} - ${product.year_end}`) : product.year || ""}) - Condicion: ${product.condition === "nuevo" ? "Nuevo" : "Usado"} - Precio: ${formattedPriceMsg}`;
+                  const message = `Hola, me interesa la pieza: ${product.name} para ${product.brand || ""} ${product.car_model || ""} (${product.year_start && product.year_end ? (product.year_start === product.year_end ? product.year_start : `${product.year_start} - ${product.year_end}`) : product.year || ""}) - Condicion: ${product.condition === "nuevo" ? "Nuevo" : "Usado"}${SHOW_PRICES ? ` - Precio: ${formattedPriceMsg}` : ""}`;
                   window.open(
                     `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,
                     "_blank",
@@ -1470,7 +1481,7 @@ button{cursor:pointer;border:0;background:none}
 
           productModalInfo.innerHTML = `
                 <h2>${currentProduct.name || "Sin nombre"}</h2>
-                <div class="price">${formattedPrice}</div>
+                ${SHOW_PRICES ? `<div class="price">${formattedPrice}</div>` : ""}
                 <div>
                     <span class="badge ${conditionClass}">${conditionLabel}</span>
                     <span class="badge" style="background:#f0f0f0;color:#555;margin-left:6px;">${categoryDisplayNames[currentProduct.category] || currentProduct.category || "Categoría"}</span>
@@ -1570,7 +1581,7 @@ button{cursor:pointer;border:0;background:none}
                   maximumFractionDigits: 2,
                 }).format(currentProduct.price)
               : "$0.00";
-            const message = `Hola, me interesa la pieza: ${currentProduct.name} para ${brand} ${carModel} (${yearDisplay}) - Condicion: ${conditionLabel} - Precio: ${formattedPriceMsg}`;
+            const message = `Hola, me interesa la pieza: ${currentProduct.name} para ${brand} ${carModel} (${yearDisplay}) - Condicion: ${conditionLabel}${SHOW_PRICES ? ` - Precio: ${formattedPriceMsg}` : ""}`;
             window.open(
               `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,
               "_blank",
