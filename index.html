@@ -19,6 +19,22 @@
       name="description"
       content="REYES PERFORMANCE · Autopartes racing en San Buenaventura, Coahuila. Marca, modelo y año. Envíos a toda la república."
     />
+    <link rel="canonical" href="https://reyesperformancemx.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="REYES PERFORMANCE" />
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:url" content="https://reyesperformancemx.com/" />
+    <meta property="og:title" content="REYES PERFORMANCE · Autopartes Racing" />
+    <meta property="og:description" content="Autopartes y body kit en San Buenaventura, Coahuila. Busca por marca, modelo y año. Envíos a toda la república." />
+    <meta property="og:image" content="https://reyesperformancemx.com/logo.jpg" />
+    <meta property="og:image:alt" content="Logo de REYES PERFORMANCE" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="REYES PERFORMANCE · Autopartes Racing" />
+    <meta name="twitter:description" content="Autopartes y body kit en San Buenaventura, Coahuila. Envíos a toda la república." />
+    <meta name="twitter:image" content="https://reyesperformancemx.com/logo.jpg" />
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"AutoPartsStore","name":"REYES PERFORMANCE","url":"https://reyesperformancemx.com/","image":"https://reyesperformancemx.com/logo.jpg","logo":"https://reyesperformancemx.com/logo.jpg","description":"Autopartes y body kit en San Buenaventura, Coahuila. Envíos a toda la república.","telephone":["+52 866 176 0344","+52 866 277 9103"],"address":{"@type":"PostalAddress","streetAddress":"Calle Maclovio Herrera #789, Zona Centro","addressLocality":"San Buenaventura","addressRegion":"Coahuila","postalCode":"25500","addressCountry":"MX"},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"09:00","closes":"19:30"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"09:00","closes":"16:00"}],"sameAs":["https://www.facebook.com/profile.php?id=61558342396278","https://www.tiktok.com/@reyes_performance0"]}
+    </script>
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="apple-touch-icon" href="favicon.png" />
     <link
@@ -197,6 +213,10 @@ button{cursor:pointer;border:0;background:none}
 .product-modal-close{position:fixed;top:max(12px,env(safe-area-inset-top))}}
 @media(max-width:560px){.vehicle-selector,.footer-grid{grid-template-columns:1fr}.search-count{width:100%}.hero-actions a{flex:1 1 100%;justify-content:center}.thumb{width:68px;height:52px}}
 @media(prefers-reduced-motion:reduce){*,::before,::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.banner-track{animation:none}}
+.product-modal-footer{display:flex;gap:10px}.product-modal-footer .whatsapp-btn{flex:1}
+.share-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:600;transition:border-color .2s,background .2s}
+@media(hover:hover){.share-btn:hover{border-color:var(--ink)}}
+@media(max-width:380px){.share-btn span{display:none}}
 </style>
   </head>
   <body>
@@ -543,6 +563,9 @@ button{cursor:pointer;border:0;background:none}
           <div class="product-modal-footer" id="productModalFooter">
             <button class="whatsapp-btn" id="productModalWhatsapp">
               <i class="fab fa-whatsapp"></i> Cotizar por WhatsApp
+            </button>
+            <button class="share-btn" id="productModalShare" type="button" aria-label="Compartir enlace del producto">
+              <i class="fas fa-share-alt"></i> <span>Compartir</span>
             </button>
           </div>
         </div>
@@ -1092,6 +1115,7 @@ button{cursor:pointer;border:0;background:none}
             populateVehicleSelectors();
             applyFilters();
             updateLoadMoreButton();
+            openFromUrl();
           } catch (error) {
             console.error("Error cargando productos:", error);
             catalogGrid.innerHTML = `
@@ -1402,6 +1426,11 @@ button{cursor:pointer;border:0;background:none}
           productModalImage.removeAttribute("src");
           updateProductModal();
           productModal.classList.add("active");
+          try {
+            const u = new URL(window.location.href);
+            u.searchParams.set("producto", product.id);
+            history.replaceState(null, "", u);
+          } catch (e) {}
           productScrollPosition =
             window.pageYOffset || document.documentElement.scrollTop;
           lockScroll();
@@ -1409,6 +1438,11 @@ button{cursor:pointer;border:0;background:none}
 
         function closeProductModal() {
           productModal.classList.remove("active");
+          try {
+            const u = new URL(window.location.href);
+            u.searchParams.delete("producto");
+            history.replaceState(null, "", u);
+          } catch (e) {}
           unlockScroll();
         }
 
@@ -1545,6 +1579,49 @@ button{cursor:pointer;border:0;background:none}
         });
 
         productModalClose.addEventListener("click", closeProductModal);
+
+        // ====== ENLACE DIRECTO POR PRODUCTO (?producto=ID) ======
+        function productLink(id) {
+          const u = new URL(window.location.href);
+          u.search = "";
+          u.hash = "";
+          u.searchParams.set("producto", id);
+          return u.toString();
+        }
+        document.getElementById("productModalShare").addEventListener("click", async function () {
+          if (!currentProduct) return;
+          const btn = this;
+          const url = productLink(currentProduct.id);
+          try {
+            if (navigator.share) {
+              await navigator.share({ title: `${currentProduct.name} · REYES PERFORMANCE`, text: currentProduct.name, url });
+              return;
+            }
+            await navigator.clipboard.writeText(url);
+          } catch (e) {
+            if (e && e.name === "AbortError") return;
+            window.prompt("Copia este enlace:", url);
+            return;
+          }
+          const old = btn.innerHTML;
+          btn.innerHTML = '<i class="fas fa-check"></i> <span>¡Enlace copiado!</span>';
+          setTimeout(() => { btn.innerHTML = old; }, 2000);
+        });
+        let deepLinkHandled = false;
+        async function openFromUrl() {
+          if (deepLinkHandled) return;
+          deepLinkHandled = true;
+          const id = parseInt(new URLSearchParams(window.location.search).get("producto"), 10);
+          if (!id) return;
+          let product = allProducts.find((p) => p.id === id);
+          if (!product) {
+            try {
+              const { data } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
+              product = data || null;
+            } catch (e) {}
+          }
+          if (product) openProductModal(product);
+        }
         productModal.addEventListener("click", function (e) {
           if (e.target === this) closeProductModal();
         });
