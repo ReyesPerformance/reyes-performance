@@ -217,6 +217,14 @@ button{cursor:pointer;border:0;background:none}
 .share-btn{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:600;transition:border-color .2s,background .2s}
 @media(hover:hover){.share-btn:hover{border-color:var(--ink)}}
 @media(max-width:380px){.share-btn span{display:none}}
+.hero-video{display:none;justify-items:center;gap:14px}
+.has-video .hero-video{display:grid}
+.header-modern.has-video .hero-inner{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(24px,5vw,72px);align-items:center}
+.video-frame{width:min(300px,100%);aspect-ratio:9/16;border-radius:22px;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.video-frame iframe{width:100%;height:100%;border:0;display:block}
+.video-link{color:#d6d8dc;font-weight:600;text-decoration:none}.video-link i{margin-right:6px}
+@media(hover:hover){.video-link:hover{color:#fff}}
+@media(max-width:900px){.header-modern.has-video .hero-inner{grid-template-columns:1fr}.has-video .scroll-hint{display:none}.header-modern.has-video{padding-bottom:150px}}
 </style>
   </head>
   <body>
@@ -274,6 +282,7 @@ button{cursor:pointer;border:0;background:none}
         <div class="hero-backdrop"><img src="fondo.webp" alt="Fondo de autopartes" fetchpriority="high" decoding="async" /></div>
         <div class="hero-stripes" aria-hidden="true"><i></i><i></i></div>
         <div class="hero-inner">
+          <div class="hero-text">
           <div class="logo-wrapper"><img src="logo.jpg" alt="REYES PERFORMANCE" fetchpriority="high" /></div>
           <h1 class="hero-title"><span class="reyes">REYES</span><span class="performance">PERFORMANCE</span></h1>
           <p class="hero-sub"><strong>Hecho para dominar en las calles</strong>Autopartes y body kit, con envíos a toda la república.</p>
@@ -282,6 +291,13 @@ button{cursor:pointer;border:0;background:none}
             <a href="#contacto" class="btn-outline"><i class="fas fa-phone-alt"></i> Contacto</a>
           </div>
           <div class="scroll-hint"><i class="fas fa-chevron-down"></i> Desplaza para explorar</div>
+          </div>
+          <div class="hero-video" id="videoDestacado">
+            <div class="video-frame">
+              <iframe id="tiktokFrame" title="Video de TikTok de REYES PERFORMANCE" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+            </div>
+            <a id="tiktokLink" class="video-link" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-tiktok"></i> Ver en TikTok</a>
+          </div>
         </div>
       </header>
 
@@ -874,12 +890,28 @@ button{cursor:pointer;border:0;background:none}
         // Ajuste global: mostrar u ocultar precios (se controla desde el panel admin)
         let SHOW_PRICES = true;
         const settingsReady = Promise.resolve(
-          supabase.from("site_settings").select("value").eq("key", "show_prices").maybeSingle(),
+          supabase.from("site_settings").select("key,value").in("key", ["show_prices", "tiktok_video_url"]),
         )
           .then(({ data }) => {
-            if (data && String(data.value) === "false") SHOW_PRICES = false;
+            (data || []).forEach((r) => {
+              if (r.key === "show_prices" && String(r.value) === "false") SHOW_PRICES = false;
+              if (r.key === "tiktok_video_url") renderTikTok(r.value);
+            });
           })
           .catch(() => {});
+
+        // Video de TikTok en la portada (lo define el admin; sin enlace, la portada queda como siempre)
+        function renderTikTok(url) {
+          const hero = document.getElementById("inicio");
+          const frame = document.getElementById("tiktokFrame");
+          if (!hero || !frame) return;
+          const u = String(url || "").trim();
+          const m = u.match(/^https?:\/\/([a-z0-9-]+\.)?tiktok\.com\/.*\/video\/(\d+)/i);
+          if (!m) { hero.classList.remove("has-video"); return; }
+          document.getElementById("tiktokLink").href = u;
+          frame.src = `https://www.tiktok.com/player/v1/${m[2]}?autoplay=1&loop=1&music_info=0&description=0&rel=0`;
+          hero.classList.add("has-video");
+        }
 
         // Elementos DOM
         const catalogGrid = document.getElementById("catalogGrid");
